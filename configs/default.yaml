@@ -24,8 +24,8 @@ eval:
   max_lfw_pairs: null
   max_attack_pairs: 256
   n_lip_images: 64
-  pgd_eps: 0.03137255
-  pgd_steps: 7
+  pgd_eps: 1.5
+  pgd_steps: 20
 paths:
   checkpoint_dir: outputs/checkpoints/full
   log_dir: outputs/logs/full

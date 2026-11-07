@@ -24,7 +24,7 @@ eval:
   max_lfw_pairs: 200
   max_attack_pairs: 64
   n_lip_images: 32
-  pgd_eps: 0.03137255
+  pgd_eps: 1.5
   pgd_steps: 5
 paths:
   checkpoint_dir: outputs/checkpoints/smoke

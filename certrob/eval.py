@@ -36,20 +36,26 @@ def _device(cfg: dict, override: Optional[str] = None) -> torch.device:
     return torch.device(name)
 
 
+def equal_error_rate(scores: np.ndarray, labels: np.ndarray) -> float:
+    """Error rate at the threshold where FMR and FNMR are closest."""
+    mated = labels[np.argsort(scores)] == 1
+    if mated.all() or not mated.any():
+        return 1.0
+    fnmr = np.cumsum(mated) / mated.sum()
+    fmr = 1.0 - np.cumsum(~mated) / (~mated).sum()
+    i = int(np.argmin(np.abs(fmr - fnmr)))
+    return float(0.5 * (fmr[i] + fnmr[i]))
+
+
 def best_acc_eer(scores: np.ndarray, labels: np.ndarray) -> Tuple[float, float, float]:
     thresholds = np.linspace(scores.min(), scores.max(), 200)
-    best_acc, best_eer, best_t = 0.0, 1.0, 0.0
+    best_acc, best_t = 0.0, 0.0
     for t in thresholds:
         pred = (scores >= t).astype(np.int32)
         acc = float((pred == labels).mean())
         if acc > best_acc:
             best_acc, best_t = acc, float(t)
-        pos, neg = labels == 1, labels == 0
-        if pos.any() and neg.any():
-            fpr = float((pred[neg] == 1).mean())
-            fnr = float((pred[pos] == 0).mean())
-            best_eer = min(best_eer, 0.5 * (fpr + fnr))
-    return best_acc, best_eer, best_t
+    return best_acc, equal_error_rate(scores, labels), best_t
 
 
 def load_model(ckpt: Path, device) -> FaceEmbedder:
@@ -82,8 +88,8 @@ def eval_model(model, cfg, device, tag: str) -> Dict:
     nw = int(cfg["train"].get("num_workers", 4))
     max_p = cfg["eval"].get("max_lfw_pairs")
     max_p = int(max_p) if max_p is not None else None
-    eps = float(cfg["eval"].get("pgd_eps", 8 / 255))
-    steps = int(cfg["eval"].get("pgd_steps", 7))
+    eps = float(cfg["eval"].get("pgd_eps", 1.5))
+    steps = int(cfg["eval"].get("pgd_steps", 20))
     max_atk = int(cfg["eval"].get("max_attack_pairs", 256))
 
     out: Dict = {"tag": tag, "verification": {}, "robustness": {}}
@@ -114,7 +120,7 @@ def eval_model(model, cfg, device, tag: str) -> Dict:
     )
     n_lip = min(len(val_ds), int(cfg["eval"].get("n_lip_images", 64)))
     imgs = torch.stack([val_ds[i][0] for i in range(n_lip)]).to(device)
-    lip = estimate_lipschitz(model, imgs, eps=0.05, n_probe=4)
+    lip = estimate_lipschitz(model, imgs)
     print(f"[{tag}] lip_est={lip:.4f}")
 
     # PGD on LFW subset
