@@ -1,0 +1,7 @@
+# Published values from Paik, Kim, Hwang, Kim & Seo, "Towards Certifiably Robust Face
+# Recognition", ECCV 2024, extended in IEEE TBIOM, doi:10.1109/TBIOM.2025.3644396.
+# The numbers are from the ECCV paper; the journal version may differ.
+source: https://www.ecva.net/papers/eccv_2024/papers_ECCV/html/11379_ECCV_2024_paper.php
+
+# Table 1, LFW.
+lfw_tar_far_1e3: 83.97
